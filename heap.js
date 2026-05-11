@@ -1,253 +1,127 @@
 /**
- * A max-heap based priority queue implementation.
- * Higher priority values are dequeued first.
- * Supports enqueue, dequeue, peek, and utility methods.
- * @example
- * const pq = new MaxPriorityQueue();
- * pq.enqueue('high priority', 10);
- * pq.enqueue('low priority', 1);
- * console.log(pq.front()); // {value: 'high priority', priority: 10}
- * pq.dequeue(); // removes 'high priority'
+ * A Binary Heap-based Priority Queue.
+ * Time Complexities:
+ *   - Enqueue: O(log n)
+ *   - Dequeue: O(log n)
+ *   - Peek: O(1)
  */
-class MaxPriorityQueue {
-    constructor() {
+class PriorityQueue {
+    /**
+     * @param {function} [compare] - Optional custom comparator.
+     * Defaults to (a, b) => a < b (Min-Priority Queue).
+     */
+    constructor(compare) {
         this.heap = [];
+        // If no comparator is provided, default to Min-Heap (ascending)
+        this.compare = compare || ((a, b) => a < b);
     }
 
-    /**
-     * Adds an item to the priority queue with the given priority.
-     * @param {*} value - The value to store.
-     * @param {number} priority - The priority of the item (higher values have higher priority).
-     */
-    enqueue(value, priority) {
-        this.heap.push({ value, priority });
-        this.heapifyUp();
-    }
-
-    /**
-     * Moves the newly added node up the heap to maintain max-heap property.
-     * @private
-     */
-    heapifyUp() {
-        let index = this.heap.length - 1;
-        while (index > 0) {
-            let parent = Math.floor((index - 1) / 2);
-            if (this.heap[index].priority <= this.heap[parent].priority) break;
-            this.swap(index, parent);
-            index = parent;
-        }
-    }
-
-    /**
-     * Removes and returns the highest-priority item from the queue.
-     * @returns {{value: *, priority: number} | null} The highest-priority item or null if empty.
-     */
-    dequeue() {
-        if (this.heap.length === 0) return null;
-        const max = this.heap[0];
-        const end = this.heap.pop();
-
-        if (this.heap.length > 0) {
-            this.heap[0] = end;
-            this.heapifyDown();
-        }
-        return max;
-    }
-
-    /**
-     * Restores the heap property downwards from the root.
-     * @private
-     */
-    heapifyDown() {
-        let index = 0;
-        let length = this.heap.length;
-        while (true) {
-            let left = 2 * index + 1;
-            let right = 2 * index + 2;
-            let largest = index;
-
-            if (left < length && this.heap[left].priority > this.heap[largest].priority) {
-                largest = left;
-            }
-
-            if (right < length && this.heap[right].priority > this.heap[largest].priority) {
-                largest = right;
-            }
-
-            if (largest === index) break;
-            this.swap(index, largest);
-            index = largest;
-        }
-    }
-
-    /**
-     * Returns the highest-priority item without removing it.
-     * @returns {{value: *, priority: number} | null} The highest-priority item or null if empty.
-     */
-    front() {
-        return this.heap.length > 0 ? this.heap[0] : null;
-    }
-
-    /**
-     * Returns the number of items in the queue.
-     * @returns {number} The size of the queue.
-     */
+    /** @returns {number} The current size of the queue. */
     size() {
         return this.heap.length;
     }
 
-    /**
-     * Checks if the queue is empty.
-     * @returns {boolean} True if the queue is empty, false otherwise.
-     */
+    /** @returns {boolean} True if the queue is empty. */
     isEmpty() {
         return this.heap.length === 0;
     }
 
+    /** @returns {*} The element with the highest priority without removing it. */
+    peek() {
+        return this.isEmpty() ? null : this.heap[0];
+    }
+
     /**
-     * Swaps two elements in the heap array.
-     * @private
-     * @param {number} i - Index of first element.
-     * @param {number} j - Index of second element.
+     * Adds an element to the queue.
+     * @param {*} value
      */
+    enqueue(value) {
+        this.heap.push(value);
+        this.heapifyUp();
+    }
+
+    /**
+     * Removes and returns the element with the highest priority.
+     * @returns {*}
+     */
+    dequeue() {
+        if (this.isEmpty()) return null;
+        if (this.size() === 1) return this.heap.pop();
+
+        const top = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this.heapifyDown();
+        return top;
+    }
+
+    /** @private */
+    heapifyUp() {
+        let index = this.heap.length - 1;
+        while (index > 0) {
+            let parentIndex = Math.floor((index - 1) / 2);
+            // If the current element should be above its parent...
+            if (this.compare(this.heap[index], this.heap[parentIndex])) {
+                this.swap(index, parentIndex);
+                index = parentIndex;
+            } else {
+                break;
+            }
+        }
+    }
+
+    /** @private */
+    heapifyDown() {
+        let index = 0;
+        const length = this.heap.length;
+
+        while (true) {
+            let left = 2 * index + 1;
+            let right = 2 * index + 2;
+            let targetIndex = null;
+
+            // Check if left child has higher priority than current
+            if (left < length) {
+                if (this.compare(this.heap[left], this.heap[index])) {
+                    targetIndex = left;
+                }
+            }
+
+            // Check if right child has higher priority than current (or current target)
+            if (right < length) {
+                if (
+                    (targetIndex === null && this.compare(this.heap[right], this.heap[index])) ||
+                    (targetIndex !== null && this.compare(this.heap[right], this.heap[left]))
+                ) {
+                    targetIndex = right;
+                }
+            }
+
+            if (targetIndex === null) break;
+            this.swap(index, targetIndex);
+            index = targetIndex;
+        }
+    }
+
+    /** @private */
     swap(i, j) {
         [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
     }
 }
 
 /**
- * A min-heap based priority queue implementation.
- * Lower priority values are dequeued first.
- * Supports enqueue, dequeue, peek, and utility methods.
- * @example
- * const pq = new MinPriorityQueue();
- * pq.enqueue('urgent', 1);
- * pq.enqueue('normal', 10);
- * console.log(pq.front()); // {value: 'urgent', priority: 1}
- * pq.dequeue(); // removes 'urgent'
+ * Convenience class for Max-Priority Queue
  */
-class MinPriorityQueue {
-    constructor() {
-        this.heap = [];
-    }
-
-    /**
-     * Adds an item to the priority queue with the given priority.
-     * @param {*} value - The value to store.
-     * @param {number} priority - The priority of the item (lower values have higher priority).
-     */
-    enqueue(value, priority) {
-        this.heap.push({ value, priority });
-        this.heapifyUp();
-    }
-
-    /**
-     * Moves the newly added node up the heap to maintain min-heap property.
-     * @private
-     */
-    heapifyUp() {
-        let index = this.heap.length - 1;
-        while (index > 0) {
-            let parent = Math.floor((index - 1) / 2);
-            if (this.heap[index].priority >= this.heap[parent].priority) break;
-            this.swap(index, parent);
-            index = parent;
-        }
-    }
-
-    /**
-     * Removes and returns the lowest-priority item from the queue.
-     * @returns {{value: *, priority: number} | null} The lowest-priority item or null if empty.
-     */
-    dequeue() {
-        if (this.heap.length === 0) return null;
-        const min = this.heap[0];
-        const end = this.heap.pop();
-
-        if (this.heap.length > 0) {
-            this.heap[0] = end;
-            this.heapifyDown();
-        }
-        return min;
-    }
-
-    /**
-     * Restores the heap property downwards from the root.
-     * @private
-     */
-    heapifyDown() {
-        let index = 0;
-        let length = this.heap.length;
-        while (true) {
-            let left = 2 * index + 1;
-            let right = 2 * index + 2;
-            let smallest = index;
-
-            if (left < length && this.heap[left].priority < this.heap[smallest].priority) {
-                smallest = left;
-            }
-
-            if (right < length && this.heap[right].priority < this.heap[smallest].priority) {
-                smallest = right;
-            }
-
-            if (smallest === index) break;
-            this.swap(index, smallest);
-            index = smallest;
-        }
-    }
-
-    /**
-     * Returns the lowest-priority item without removing it.
-     * @returns {{value: *, priority: number} | null} The lowest-priority item or null if empty.
-     */
-    front() {
-        return this.heap.length > 0 ? this.heap[0] : null;
-    }
-
-    /**
-     * Returns the number of items in the queue.
-     * @returns {number} The size of the queue.
-     */
-    size() {
-        return this.heap.length;
-    }
-
-    /**
-     * Checks if the queue is empty.
-     * @returns {boolean} True if the queue is empty, false otherwise.
-     */
-    isEmpty() {
-        return this.heap.length === 0;
-    }
-
-    /**
-     * Swaps two elements in the heap array.
-     * @private
-     * @param {number} i - Index of first element.
-     * @param {number} j - Index of second element.
-     */
-    swap(i, j) {
-        [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+class MaxPriorityQueue extends PriorityQueue {
+    constructor(compare = (a, b) => a > b) {
+        super(compare);
     }
 }
 
 /**
- * Exports the priority queue classes for use in other modules.
- * @module heap
- * @exports {MaxPriorityQueue} MaxPriorityQueue - A max-heap priority queue.
- * @exports {MinPriorityQueue} MinPriorityQueue - A min-heap priority queue.
- * @example
- * const { MaxPriorityQueue, MinPriorityQueue } = require('./heap');
- * 
- * const maxPQ = new MaxPriorityQueue();
- * maxPQ.enqueue('A', 3);
- * maxPQ.enqueue('B', 1);
- * console.log(maxPQ.dequeue()); // {value: 'A', priority: 3}
- * 
- * const minPQ = new MinPriorityQueue();
- * minPQ.enqueue('X', 2);
- * minPQ.enqueue('Y', 4);
- * console.log(minPQ.dequeue()); // {value: 'X', priority: 2}
+ * Convenience class for Min-Priority Queue
  */
-module.exports = { MaxPriorityQueue, MinPriorityQueue };
+class MinPriorityQueue extends PriorityQueue {
+    constructor(compare = (a, b) => a < b) {
+        super(compare);
+    }
+}
